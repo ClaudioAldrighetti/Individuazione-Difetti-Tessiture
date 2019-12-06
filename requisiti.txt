@@ -1,0 +1,14 @@
+Analisi di difetti di tessiture
+
+Si hanno i seguenti sotto-obiettivi:
+-> Individuare un numero di casi di studio elevato (20 almeno) dove evidenziare i difetti presenti.
+-> Trovare un’euristica che permetta di rendere il processo di rilevamento automatico, senza la necessità di selezione delle soglie.
+NB: Non è richiesto di sviluppare un codice infallibile.
+
+Steps:
+
+1) Partendo con una finestra di misura minima dei campioni desiderati, si effettuano delle prove di cross-correlazione su tutta l'immagine e se ne osservano i risultati. Se in più campioni la cross-correlazione normalizzata media ha un buon valore, vuol dire che la grandezza considerata e' sufficiente affinche' i campioni contengano il pattern base della tessitura. Altrimenti, si aumenta la dimensione della finestra e si effettua nuovamente questo passaggio.
+
+2) Ottenuti i campioni contenenti il pattern, vengono scartati quelli che hanno un basso valore di cross-correlazione normalizzata media, in quanto molto probabilmente conterranno parzialmente o totalmente un difetto.
+
+3) Con i campioni validi si effettua una seconda cross-correlazione non normalizzata per evidenziare meglio le aree della tessitura che presentano dei difetti. A partire dai risultati ottenuti, le aree individuate vengono evidenziate e mostrate ad immagine.
