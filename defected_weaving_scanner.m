@@ -4,62 +4,74 @@ close all;
 clc;
 
 % Image
-img = imread('defect1.jpg');
-grayImg = rgb2gray(img);
-[row,col]=size(grayImg);
+img = imread('defect24.jpg');
+[row, col, X] = size(img);
 hR = round(row/2);
 hC = round(col/2);
+if(X == 3)
+    cImg = rgb2gray(img);
+else
+    cImg = img;
+end
 
 % Patterns
-pSize = 14;
+pSize = 10;
 hP = round(pSize/2);
 patterns = {
-    grayImg(1:1+pSize, 1:1+pSize)       grayImg(1:1+pSize, hC-hP:hC+hP)     grayImg(1:1+pSize, col-pSize:col)
-    grayImg(hR-hP:hR+hP, 1:1+pSize)     grayImg(hR-hP:hR+hP, hC-hP:hC+hP)   grayImg(hR-hP:hR+hP, col-pSize:col)
-    grayImg(row-pSize:row, 1:1+pSize)   grayImg(row-pSize:row, hC-hP:hC+hP) grayImg(row-pSize:row, col-pSize:col)
+    cImg(1:1+pSize, 1:1+pSize)
+    cImg(1:1+pSize, hC-hP:hC+hP)
+    cImg(1:1+pSize, col-pSize:col)
+    cImg(hR-hP:hR+hP, 1:1+pSize)
+    cImg(hR-hP:hR+hP, col-pSize:col)
+    cImg(row-pSize:row, 1:1+pSize)
+    cImg(row-pSize:row, hC-hP:hC+hP)
+    cImg(row-pSize:row, col-pSize:col)
 };
 
 % Image and patterns plot
-figure;
-subplot(1,2,1);
-imagesc(img); axis image; hold on;
-title('Image in RGB');
-subplot(1,2,2);
-imagesc(grayImg); axis image; colormap gray; hold on;
-rectangle('position',[1,1,pSize,pSize],'EdgeColor',[1 0 0]);
-rectangle('position',[hC-hP,1,pSize,pSize],'EdgeColor',[1 0 0]);
-rectangle('position',[col-pSize,1,pSize,pSize],'EdgeColor',[1 0 0]);
-rectangle('position',[1,hR-hP,pSize,pSize],'EdgeColor',[1 0 0]);
-rectangle('position',[hC-hP,hR-hP,pSize,pSize],'EdgeColor',[1 0 0]);
-rectangle('position',[col-pSize,hR-hP,pSize,pSize],'EdgeColor',[1 0 0]);
-rectangle('position',[1,row-pSize,pSize,pSize],'EdgeColor',[1 0 0]);
-rectangle('position',[hC-hP,row-pSize,pSize,pSize],'EdgeColor',[1 0 0]);
-rectangle('position',[col-pSize,row-pSize,pSize,pSize],'EdgeColor',[1 0 0]);
-title('Gray Image');
+%figure;
+%imagesc(cImg); axis image; colormap gray; hold on;
+%rectangle('position',[1,1,pSize,pSize],'EdgeColor',[1 0 0]);
+%rectangle('position',[hC-hP,1,pSize,pSize],'EdgeColor',[1 0 0]);
+%rectangle('position',[col-pSize,1,pSize,pSize],'EdgeColor',[1 0 0]);
+%rectangle('position',[1,hR-hP,pSize,pSize],'EdgeColor',[1 0 0]);
+%rectangle('position',[col-pSize,hR-hP,pSize,pSize],'EdgeColor',[1 0 0]);
+%rectangle('position',[1,row-pSize,pSize,pSize],'EdgeColor',[1 0 0]);
+%rectangle('position',[hC-hP,row-pSize,pSize,pSize],'EdgeColor',[1 0 0]);
+%rectangle('position',[col-pSize,row-pSize,pSize,pSize],'EdgeColor',[1 0 0]);
+%title('Patterns position');
 
 % Test normalized cross-correlation between patterns and gray image
-pCrossCorr = cell(0,9);
-for i=1:9
-    pattern = cell2mat(patterns(i));
-    pCrossCorr(i) = {normxcorr2(pattern, grayImg)};
+pCrossCorr = cell(1,8);
+for i=1:8
+    tmpCC = normxcorr2(cell2mat(patterns(i)), cImg);
+    tmpCC = tmpCC(pSize-1:end-(pSize-1),pSize-1:end-(pSize-1));
+    pCrossCorr(i) = {tmpCC};
 end
 
-%% TODO
-c = (c1+c2+c3+c4+c5+c6)/6;
-c = c(12:end-12,12:end-12);
-figure, surf(abs(c)), shading flat
-figure, imagesc(abs(c)), colorbar
-c=abs(c);
+% Max mean CC value
+mCC = 0;
+maxCC = mean(mean(abs(cell2mat(pCrossCorr(1)))));
+maxIndex = 1;
+for i=2:8
+    mCC = mean(mean(abs(cell2mat(pCrossCorr(i)))));
+    if(mCC > maxCC)
+        maxCC = mCC;
+        maxIndex = i;
+    end
+end
+maxPCC = cell2mat(pCrossCorr(maxIndex));
 
-mask = c<0.2;
-figure, imagesc(mask)
-se = strel('disk',3);
-mask2 = imopen(mask,se);
-figure, imagesc(mask2);
+% Plot normalized C
+%figure, surf(abs(maxPCrossCorr)), shading flat;
+figure, imagesc(abs(maxPCC),[0 1]), colorbar;
 
-A=A(5:end-6,5:end-6);
-A1 = A;
-A1(mask2)=255;
-Af=cat(3,A1,A,A);
- figure;
-imshowpair(A,Af,'montage')
+% Mask
+dfct = abs(maxPCC)<0.2;
+se = strel('disk',2);
+mask = imopen(dfct,se);
+maskImg = cImg;
+maskImg(mask)=255;
+defImg=cat(3,maskImg,cImg,cImg);
+figure;
+imshowpair(cImg,defImg,'montage');
