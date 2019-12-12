@@ -3,6 +3,10 @@ clear all;
 close all;
 clc;
 
+% Macros
+CCMIN = 0.1;
+MIN_PSIZE = 12;
+
 % Image
 img = imread('defect24.jpg');
 [row, col, X] = size(img);
@@ -15,7 +19,7 @@ else
 end
 
 % Patterns
-pSize = 10;
+pSize = MIN_PSIZE;
 hP = round(pSize/2);
 patterns = {
     cImg(1:1+pSize, 1:1+pSize)
@@ -50,25 +54,40 @@ for i=1:8
 end
 
 % Max mean CC value
-mCC = 0;
-maxCC = mean(mean(abs(cell2mat(pCrossCorr(1)))));
-maxIndex = 1;
-for i=2:8
-    mCC = mean(mean(abs(cell2mat(pCrossCorr(i)))));
-    if(mCC > maxCC)
-        maxCC = mCC;
-        maxIndex = i;
+%mCC = 0;
+%maxCC = mean(mean(abs(cell2mat(pCrossCorr(1)))));
+%maxIndex = 1;
+%for i=2:8
+%    mCC = mean(mean(abs(cell2mat(pCrossCorr(i)))));
+%    if(mCC > maxCC)
+%        maxCC = mCC;
+%        maxIndex = i;
+%    end
+%end
+%maxPCC = cell2mat(pCrossCorr(maxIndex));
+
+% CC mean of patterns CC
+crossCorr = 0;
+validP = 0;
+for i=1:8
+    % Check if pattern has a defect inside
+    meanCC = mean(mean(abs(cell2mat(pCrossCorr(i)))));
+    if(meanCC > CCMIN)
+        % Valid pattern
+        crossCorr = crossCorr + cell2mat(pCrossCorr(i));
+        validP = validP + 1;
+    else
+        meanCC;
     end
 end
-maxPCC = cell2mat(pCrossCorr(maxIndex));
+crossCorr = crossCorr/validP;
 
 % Plot normalized C
-%figure, surf(abs(maxPCrossCorr)), shading flat;
-figure, imagesc(abs(maxPCC),[0 1]), colorbar;
+figure, imagesc(abs(crossCorr)), colorbar;
 
-% Mask
-dfct = abs(maxPCC)<0.2;
-se = strel('disk',2);
+%% Mask
+dfct = abs(crossCorr)<CCMIN;
+se = strel('disk',3);
 mask = imopen(dfct,se);
 maskImg = cImg;
 maskImg(mask)=255;
