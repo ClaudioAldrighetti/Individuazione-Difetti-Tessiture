@@ -4,11 +4,13 @@ close all;
 clc;
 
 % Macros
-CCMIN = 0.1;
+CCMIN = 0.2;
 MIN_PSIZE = 12;
+N_PATS = 4;
+TRASL_PAT = 1;
 
 % Image
-img = imread('defect24.jpg');
+img = imread('defect27.jpg');
 [row, col, X] = size(img);
 hR = round(row/2);
 hC = round(col/2);
@@ -21,33 +23,29 @@ end
 % Patterns
 pSize = MIN_PSIZE;
 hP = round(pSize/2);
+tP = TRASL_PAT;
 patterns = {
     cImg(1:1+pSize, 1:1+pSize)
-    cImg(1:1+pSize, hC-hP:hC+hP)
+    cImg(1+tP:1+pSize+tP, 1+tP:1+pSize+tP)
+%    cImg(1:1+pSize, hC-hP:hC+hP)
+%    cImg(1+tP:1+pSize+tP, hC-hP:hC+hP)
     cImg(1:1+pSize, col-pSize:col)
-    cImg(hR-hP:hR+hP, 1:1+pSize)
-    cImg(hR-hP:hR+hP, col-pSize:col)
-    cImg(row-pSize:row, 1:1+pSize)
-    cImg(row-pSize:row, hC-hP:hC+hP)
-    cImg(row-pSize:row, col-pSize:col)
+    cImg(1+tP:1+pSize+tP, col-pSize-tP:col-tP)
+%    cImg(hR-hP:hR+hP, 1:1+pSize)
+%    cImg(hR-hP:hR+hP, 1+tP:1+pSize+tP)
+%    cImg(hR-hP:hR+hP, col-pSize:col)
+%    cImg(hR-hP:hR+hP, col-pSize-tP:col-tP)
+%    cImg(row-pSize:row, 1:1+pSize)
+%    cImg(row-pSize-tP:row-tP, 1+tP:1+pSize+tP)
+%    cImg(row-pSize:row, hC-hP:hC+hP)
+%    cImg(row-pSize-tP:row-tP, hC-hP:hC+hP)
+%    cImg(row-pSize:row, col-pSize:col)
+%    cImg(row-pSize-tP:row-tP, col-pSize-tP:col-tP)
 };
 
-% Image and patterns plot
-%figure;
-%imagesc(cImg); axis image; colormap gray; hold on;
-%rectangle('position',[1,1,pSize,pSize],'EdgeColor',[1 0 0]);
-%rectangle('position',[hC-hP,1,pSize,pSize],'EdgeColor',[1 0 0]);
-%rectangle('position',[col-pSize,1,pSize,pSize],'EdgeColor',[1 0 0]);
-%rectangle('position',[1,hR-hP,pSize,pSize],'EdgeColor',[1 0 0]);
-%rectangle('position',[col-pSize,hR-hP,pSize,pSize],'EdgeColor',[1 0 0]);
-%rectangle('position',[1,row-pSize,pSize,pSize],'EdgeColor',[1 0 0]);
-%rectangle('position',[hC-hP,row-pSize,pSize,pSize],'EdgeColor',[1 0 0]);
-%rectangle('position',[col-pSize,row-pSize,pSize,pSize],'EdgeColor',[1 0 0]);
-%title('Patterns position');
-
 % Test normalized cross-correlation between patterns and gray image
-pCrossCorr = cell(1,8);
-for i=1:8
+pCrossCorr = cell(1,N_PATS);
+for i=1:N_PATS
     tmpCC = normxcorr2(cell2mat(patterns(i)), cImg);
     tmpCC = tmpCC(pSize-1:end-(pSize-1),pSize-1:end-(pSize-1));
     pCrossCorr(i) = {tmpCC};
@@ -69,15 +67,13 @@ end
 % CC mean of patterns CC
 crossCorr = 0;
 validP = 0;
-for i=1:8
+for i=1:N_PATS
     % Check if pattern has a defect inside
     meanCC = mean(mean(abs(cell2mat(pCrossCorr(i)))));
     if(meanCC > CCMIN)
         % Valid pattern
         crossCorr = crossCorr + cell2mat(pCrossCorr(i));
         validP = validP + 1;
-    else
-        meanCC;
     end
 end
 crossCorr = crossCorr/validP;
@@ -85,12 +81,16 @@ crossCorr = crossCorr/validP;
 % Plot normalized C
 figure, imagesc(abs(crossCorr)), colorbar;
 
-%% Mask
-dfct = abs(crossCorr)<CCMIN;
+% Mask
+mask = crossCorr<0.2;
+figure, imagesc(mask);
 se = strel('disk',3);
-mask = imopen(dfct,se);
-maskImg = cImg;
-maskImg(mask)=255;
-defImg=cat(3,maskImg,cImg,cImg);
+mask2 = imopen(mask,se);
+figure, imagesc(mask2);
+
+cImg=cImg(5:end-5,5:end-5);
+cMaskImg = cImg;
+cMaskImg(mask2)=255;
+defImg=cat(3,cMaskImg,cImg,cImg);
 figure;
-imshowpair(cImg,defImg,'montage');
+imshowpair(cImg,defImg,'montage')
